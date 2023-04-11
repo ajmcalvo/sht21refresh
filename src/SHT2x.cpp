@@ -2,16 +2,16 @@
   SHT2x - A Humidity Library for Arduino.
 
   Supported Sensor modules:
-    SHT21-Breakout Module - http://www.moderndevice.com/products/sht21-humidity-sensor
+	SHT21-Breakout Module - http://www.moderndevice.com/products/sht21-humidity-sensor
 	SHT2x-Breakout Module - http://www.misenso.com/products/001
-	
+
   Created by Christopher Ladden at Modern Device on December 2009.
   Modified by Paul Badger March 2010
-  
+
   Modified by www.misenso.com on October 2011:
 	- code optimisation
 	- compatibility with Arduino 1.0
-  
+
   Modified by (@amontero) cicytex.juntaex.es on April 2023
   These modification are related to new versions of Wire lirary
   - added delay after transmission end
@@ -37,8 +37,6 @@
 #include "Arduino.h"
 #include "SHT2x.h"
 
-
-
 /******************************************************************************
  * Global Functions
  ******************************************************************************/
@@ -49,8 +47,8 @@ SHT2xClass::SHT2xClass()
 	measHumReady = false;
 	measuringTemp = false;
 	measuringHum = false;
-}	
- 
+}
+
 /**********************************************************
  * GetHumidity
  *  Gets the current humidity from the sensor.
@@ -66,15 +64,20 @@ boolean SHT2xClass::GetHumidityNoHold(float *h)
 {
 	uint16_t a;
 
-	if(measuringHum == true){
+	if (measuringHum == true)
+	{
 		a = readSensorNoHoldRead();
-		if(measHumReady){
+		if (measHumReady)
+		{
 			*h = (-6.0 + 125.0 / 65536.0 * (float)(a));
-			return(true);
-		}else
-			return(false);
-	}else{
-		return(false);
+			return (true);
+		}
+		else
+			return (false);
+	}
+	else
+	{
+		return (false);
 	}
 }
 
@@ -93,18 +96,22 @@ boolean SHT2xClass::GetTemperatureNoHold(float *t)
 {
 	uint16_t a;
 
-	if(measuringTemp == true){
+	if (measuringTemp == true)
+	{
 		a = readSensorNoHoldRead();
-		if(measTempReady){
+		if (measTempReady)
+		{
 			*t = (-46.85 + 175.72 / 65536.0 * (float)(a));
-			return(true);
-		}else
-			return(false);
-	}else{
-		return(false);
+			return (true);
+		}
+		else
+			return (false);
+	}
+	else
+	{
+		return (false);
 	}
 }
-
 
 /******************************************************************************
  * Private Functions
@@ -112,70 +119,77 @@ boolean SHT2xClass::GetTemperatureNoHold(float *t)
 
 uint16_t SHT2xClass::readSensor(uint8_t command)
 {
-    uint16_t result;
-
-    Wire.beginTransmission(eSHT2xAddress);	//begin
-    Wire.write(command);					//send the pointer location
-    Wire.endTransmission();               	//end
-	delay(_msecs);
-    Wire.requestFrom(eSHT2xAddress, 3);
-    while(Wire.available() < 3) {
-      ; //wait
-    }
-
-    //Store the result
-    result = ((Wire.read()) << 8);
-    result += Wire.read();
-	result &= ~0x0003;   // clear two low bits (status bits)
-    return result;
-}
-
-
-void SHT2xClass::readSensorNoHold(uint8_t command){
 	uint16_t result;
 
-    Wire.beginTransmission(eSHT2xAddress);	//begin
-    Wire.write(command);					//send the pointer location
-    Wire.endTransmission();               	//end
-	delay(_msecs);
+	Wire.beginTransmission(eSHT2xAddress); // begin
+	Wire.write(command);				   // send the pointer location
+	Wire.endTransmission();				   // end
+	delay(_msecs);						   // Not tested
+	Wire.requestFrom(eSHT2xAddress, 3);
+	while (Wire.available() < 3)
+	{
+		; // wait
+	}
+
+	// Store the result
+	result = ((Wire.read()) << 8);
+	result += Wire.read();
+	result &= ~0x0003; // clear two low bits (status bits)
+	return result;
 }
 
-
-uint16_t SHT2xClass::readSensorNoHoldRead(void){
+void SHT2xClass::readSensorNoHold(uint8_t command)
+{
 	uint16_t result;
-	
-    Wire.requestFrom(eSHT2xAddress, 3);
-    if(Wire.available() < 3) return -1;
-      
-    //Store the result
-    result = ((Wire.read()) << 8);
-    result += Wire.read();
-	if(bitRead(result,1) == 0){
+
+	Wire.beginTransmission(eSHT2xAddress); // begin
+	Wire.write(command);				   // send the pointer location
+	Wire.endTransmission();				   // end
+	delay(_msecs);                         // delay needed in newers
+                                           // arduino-espressif versions
+}
+
+uint16_t SHT2xClass::readSensorNoHoldRead(void)
+{
+	uint16_t result;
+
+	Wire.requestFrom(eSHT2xAddress, 3);
+	if (Wire.available() < 3)
+		return -1;
+
+	// Store the result
+	result = ((Wire.read()) << 8);
+	result += Wire.read();
+	if (bitRead(result, 1) == 0)
+	{
 		measTempReady = true;
-		measuringTemp = false;		
-	}else{
+		measuringTemp = false;
+	}
+	else
+	{
 		measHumReady = true;
 		measuringHum = false;
 	}
-	
-	result &= ~0x0003;   // clear two low bits (status bits)
-    return result;
-	
+
+	result &= ~0x0003; // clear two low bits (status bits)
+	return result;
 }
 
-void SHT2xClass::PrepareTemperatureNoHold(void){
+void SHT2xClass::PrepareTemperatureNoHold(void)
+{
 	measTempReady = false;
 	measuringTemp = true;
 	readSensorNoHold(eTempNoHoldCmd);
 }
 
-void SHT2xClass::PrepareHumidityNoHold(void){
+void SHT2xClass::PrepareHumidityNoHold(void)
+{
 	measHumReady = false;
 	measuringHum = true;
 	readSensorNoHold(eRHumidityNoHoldCmd);
 }
 
-void SHT2xClass::setEndTransmissionTime(uint32_t msecs){
- 	_msecs = msecs;
+void SHT2xClass::setEndTransmissionTime(uint32_t msecs)
+{
+	_msecs = msecs;
 }
-
